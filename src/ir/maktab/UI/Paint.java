@@ -1,5 +1,9 @@
 package ir.maktab.UI;
 
+import ir.maktab.Dao.UserDao;
+import ir.maktab.Dao.UserDaoImpl;
+import ir.maktab.Model.User;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -9,7 +13,8 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,12 +22,27 @@ import java.util.Map;
  * Created by nader on 12/13/2017.
  */
 
-public class RectDraw extends JFrame {
+public class Paint extends JFrame {
     private Color selectedColor = Color.BLACK;
     private String selectedShape = "line";
+    private User user;
+    private UserDao userDao;
+    Map<Shape, Color> shapes;
 
-    public RectDraw() {
-        initUI();
+    public Paint(User user) {
+        try {
+            userDao = new UserDaoImpl();
+            shapes = userDao.load(user);
+            this.user = user;
+            initUI();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void initUI() {
@@ -30,7 +50,7 @@ public class RectDraw extends JFrame {
         getContentPane().setBackground(new Color(186, 186, 186));
         getContentPane().setLayout(null);
         setResizable(false);
-        Font myFont = new Font(Font.SERIF, Font.BOLD, 14);
+        Font myFont = new Font("BZar", Font.BOLD, 14);
 
 
         setSize(650, 550);
@@ -115,41 +135,62 @@ public class RectDraw extends JFrame {
         group.add(green);
         group.add(blue);
 
+        Label username = new Label(user.getUserName() + " خوش آمدید");
+        username.setFont(myFont);
+        username.setBounds(525, 450, 100, 25);
+        username.setAlignment(Label.CENTER);
+        add(username);
+
         Button logOut = new Button("خروج");
         logOut.setFont(myFont);
-        logOut.setBounds(525, 450, 100, 25);
+        logOut.setActionCommand("logOut");
+        logOut.addActionListener(e -> ActionPerformed(e));
+        logOut.setBounds(525, 480, 100, 25);
         add(logOut);
 
     }
 
     private void ActionPerformed(ActionEvent e) {
-        switch (e.getActionCommand()) {
-            case "black":
-                selectedColor = Color.BLACK;
-                break;
-            case "red":
-                selectedColor = Color.RED;
-                break;
-            case "green":
-                selectedColor = Color.GREEN;
-                break;
-            case "blue":
-                selectedColor = Color.BLUE;
-                break;
-            case "line":
-                selectedShape = "line";
-                break;
-            case "oval":
-                selectedShape = "oval";
-                break;
-            case "rectangle":
-                selectedShape = "rectangle";
-                break;
+        try {
+            switch (e.getActionCommand()) {
+                case "black":
+                    selectedColor = Color.BLACK;
+                    break;
+                case "red":
+                    selectedColor = Color.RED;
+                    break;
+                case "green":
+                    selectedColor = Color.GREEN;
+                    break;
+                case "blue":
+                    selectedColor = Color.BLUE;
+                    break;
+                case "line":
+                    selectedShape = "line";
+                    break;
+                case "oval":
+                    selectedShape = "oval";
+                    break;
+                case "rectangle":
+                    selectedShape = "rectangle";
+                    break;
+                case "logOut":
+                    userDao.update(user, shapes);
+                    new Login();
+                    dispose();
+                    break;
+            }
+
+        } catch (SQLException e1) {
+            e1.printStackTrace();
         }
     }
 
     private class PaintSurface extends JPanel {
-        Map<Shape, Color> shapes = new HashMap<>();
+        {
+            if (shapes==null)
+                shapes = new HashMap<>();
+        }
 
         Point startDrag, endDrag;
 
@@ -195,6 +236,7 @@ public class RectDraw extends JFrame {
 
         }
 
+        @Override
         public void paint(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g;
@@ -228,8 +270,4 @@ public class RectDraw extends JFrame {
         }
     }
 
-    public static void main(String[] args) {
-
-        EventQueue.invokeLater(() -> new RectDraw());
-    }
 }
